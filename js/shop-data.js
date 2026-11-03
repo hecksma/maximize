@@ -2,7 +2,7 @@
 // Einkaufsliste: Katalog und Daten (Teil des Planners)
 // planner.shop = { list: [{n, c, e, q}], recent: [{n, c, e}], custom: [{n, c, e}], counts: {Name: Anzahl}, log: [{n, c, t}] }
 //   log = jeder abgehakte Artikel mit Zeitpunkt (t in Millisekunden), Grundlage der Statistik
-//   n = Name, c = Kategorie-Schlüssel, e = Symbol (Emoji), q = Menge (Text, optional)
+//   n = Name, c = Kategorie-Schlüssel, e = Symbol (Emoji), q = Menge (Text, optional), a = wann auf die Liste gelegt (ms)
 // ======================================================================
 
 const SHOP_CATS = [
@@ -56,7 +56,7 @@ function sanitizeShop(raw) {
       seen.add(shopKey(n));
       const c = shopCatKey(x.c);
       const it = { n, c, e: cleanShopEmoji(x.e, shopCat(c).e) };
-      if (withQty) it.q = typeof x.q === 'string' ? x.q.trim().slice(0, 12) : '';
+      if (withQty) { it.q = typeof x.q === 'string' ? x.q.trim().slice(0, 12) : ''; it.a = Number.isFinite(x.a) && x.a > 1e12 ? Math.floor(x.a) : 0; }
       dest.push(it);
     });
   };

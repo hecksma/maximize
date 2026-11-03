@@ -67,6 +67,10 @@ function renderShopHtml() {
 
 // ---- Statistik ----
 
+function shopResetHtml() {
+  return '<div class="start-row" style="justify-content:flex-start;margin-top:22px;"><button type="button" class="tool-btn" data-sh="reset-stats">Statistik zurücksetzen</button></div><p class="hint" style="margin-top:6px;">Löscht alle gezählten Einkäufe, zum Beispiel nach Tests. Artikel abhaken innerhalb einer Minute nach dem Hinzufügen zählt nicht.</p>';
+}
+
 function shopStatsHtml() {
   const sh = ensureShop(), log = sh.log, P = shopState.period;
   const chips = '<div class="seg shop-period" role="group" aria-label="Zeitraum">' + [[30, '30 Tage'], [90, '90 Tage'], [0, 'Alles']].map(([v, l]) => '<button type="button" data-sh="period" data-v="' + v + '" aria-pressed="' + (P === v) + '">' + l + '</button>').join('') + '</div>';
@@ -87,7 +91,7 @@ function shopStatsHtml() {
     + card(dCur.length ? nf1(cur.length / dCur.length) : '–', 'Ø Artikel pro Einkauf', dPrev.length ? 'davor ' + nf1(prev.length / dPrev.length) : '')
     + card(avgGap != null ? nf1(avgGap) + ' Tage' : '–', 'Ø Abstand', avgGap != null ? 'zwischen zwei Einkäufen' : 'zu wenig Daten')
     + '</div>';
-  if (!cur.length) return h + '<p class="hint" style="text-align:center;margin-top:16px;">In diesem Zeitraum wurde nichts gekauft.</p>';
+  if (!cur.length) return h + '<p class="hint" style="text-align:center;margin-top:16px;">In diesem Zeitraum wurde nichts gekauft.</p>' + shopResetHtml();
 
   // Verlauf: Artikel pro Woche, letzte 12 Wochen
   const mon = (d) => addDays(d, -weekdayIdx(d));
@@ -119,7 +123,7 @@ function shopStatsHtml() {
   h += '<div class="stats-title">Nach Kategorie</div><div class="sh-rows">' + cats.map(c => {
     const pct = Math.round(100 * cc[c.k] / cur.length);
     return '<div class="sh-row"><span class="sh-rn">' + c.e + ' ' + c.n + '</span><span class="sh-rv">' + pct + ' %</span><span class="sh-bar"><span style="width:' + pct + '%"></span></span></div>';
-  }).join('') + '</div>';
+  }).join('') + '</div>' + shopResetHtml();
   return h;
 }
 
@@ -139,12 +143,18 @@ function shopAdd(art, qty) {
   sh.recent = sh.recent.filter(x => shopKey(x.n) !== shopKey(art.n));
   const ex = sh.list.find(x => shopKey(x.n) === shopKey(art.n));
   if (ex) { if (qty != null) ex.q = qty; }
-  else sh.list.push({ n: art.n, c: art.c, e: art.e, q: qty || '' });
+  else sh.list.push({ n: art.n, c: art.c, e: art.e, q: qty || '', a: Date.now() });
 }
+const SHOP_MIN_MS = 60000;   // Wer einen Artikel innerhalb einer Minute nach dem Hinzufügen abhakt, hat ihn nicht gekauft
 function shopBuy(name) {
   const sh = ensureShop(), i = sh.list.findIndex(x => shopKey(x.n) === shopKey(name));
   if (i < 0) return;
   const it = sh.list.splice(i, 1)[0];
+  if (it.a && Date.now() - it.a < SHOP_MIN_MS) {
+    // Vertippt oder getestet: weder in „Zuletzt gekauft" noch in die Statistik
+    showToast('Gleich wieder abgehakt: zählt nicht als gekauft', 2500);
+    return;
+  }
   sh.recent = sh.recent.filter(x => shopKey(x.n) !== shopKey(it.n));
   sh.recent.unshift({ n: it.n, c: it.c, e: it.e });
   sh.recent = sh.recent.slice(0, 40);
@@ -228,6 +238,7 @@ plannerEl.addEventListener('click', (e) => {
       for (let i = sh.log.length - 1; i >= 0; i--) if (shopKey(sh.log[i].n) === shopKey(n)) { sh.log.splice(i, 1); if (sh.counts[it.n] > 0) sh.counts[it.n]--; break; }
     }
   }
+  else if (a === 'reset-stats') { if (!twoStep(b, 'Wirklich zurücksetzen?')) return; sh.log = []; sh.counts = {}; renderPlanner(); savePlanner(); return; }
   else if (a === 'sub') { shopState.sub = b.dataset.v === 'stats' ? 'stats' : 'list'; window.scrollTo(0, 0); renderPlanner(); return; }
   else if (a === 'period') { shopState.period = Number(b.dataset.v) || 0; renderPlanner(); return; }
   else if (a === 'toggle') {

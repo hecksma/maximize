@@ -113,3 +113,7 @@ oder Trainings-CSV).
 
 ### 2.10.1
 - Überall nichts mehr markierbar (Überschriften, Karten, Beschriftungen, kein Kopieren-Menü beim langen Drücken). Ausgenommen sind Eingabefelder und der Notiz-Editor.
+
+### 2.10.2
+- Einkauf: Wer einen Artikel innerhalb einer Minute nach dem Hinzufügen abhakt, hat ihn nicht gekauft: er verschwindet ohne „Zuletzt gekauft" und ohne Statistik (Hinweis als Toast). Listen aus älteren Versionen ohne Zeitstempel zählen wie bisher.
+- Statistik: Knopf „Statistik zurücksetzen" (zweistufig) löscht alle gezählten Einkäufe und Häufigkeiten, z. B. nach Tests.
