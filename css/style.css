@@ -1398,3 +1398,21 @@ dialog.note-full form { display: flex; flex-direction: column; height: 100%; }
 .note-search { margin-top: 16px; }
 .shop-period { margin: 16px 0 0; }
 .shop-stats-grid { margin-top: 16px !important; }
+
+.add-bar { flex-wrap: wrap; }
+.shop-suggest { position: absolute; left: 0; right: 0; bottom: calc(100% - 16px); display: flex; gap: 6px; padding: 8px 20px 4px; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; background: linear-gradient(to top, var(--bg) 55%, transparent); }
+.shop-suggest[hidden] { display: none; }
+.shop-suggest .chip { flex: none; height: 34px; padding: 0 12px; background: var(--bg-elevated); }
+.shop-suggest .chip.first { border-color: var(--sage); }
+.shop-suggest .chip[aria-pressed="true"] { background: var(--sage); color: var(--bg); }
+
+/* ---- Nichts markieren: Die App ist eine Bedienoberfläche, kein Text zum Kopieren ---- */
+html, body, dialog {
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+}
+/* Nur Eingabefelder und der Notiz-Editor bleiben auswählbar, sonst könntest du dort nicht schreiben und Text bearbeiten */
+input, textarea, select, [contenteditable="true"] {
+  -webkit-user-select: text; user-select: text;
+  -webkit-touch-callout: default;
+}

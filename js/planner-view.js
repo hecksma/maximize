@@ -158,6 +158,7 @@ function renderPlanner() {
   plannerEl.innerHTML = plannerState.tab === 'tasks' ? renderTasksHtml() : plannerState.tab === 'secret' ? renderSecretHtml() : plannerState.tab === 'shop' ? renderShopHtml() : renderNotesHtml();
   updatePlannerSubtitle();
   updatePlannerChrome();
+  if (typeof shopSuggestRender === 'function') shopSuggestRender();
 }
 
 // Eingabeleiste unten: gehört im Planner zur gerade gezeigten Ansicht

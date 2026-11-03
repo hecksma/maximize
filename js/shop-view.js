@@ -38,9 +38,10 @@ function shopMainHtml() {
   }
   // Katalog je Kategorie
   let any = false;
+  const matchSet = new Set(q ? shopRank(shopState.q).map(a => shopKey(a.n)) : []);
   SHOP_CATS.forEach(c => {
     let arts = shopArticles(c.k);
-    if (q) arts = arts.filter(a => shopKey(a.n).indexOf(q) >= 0);
+    if (q) arts = arts.filter(a => matchSet.has(shopKey(a.n)));
     if (!arts.length) return;
     any = true;
     const open = q ? true : shopState.open.has(c.k);
@@ -154,16 +155,60 @@ function shopBuy(name) {
 function shopQuickAdd(text) {
   const name = text.trim().slice(0, 30);
   if (!name) return;
-  const art = shopFind(name) || (() => {
+  const top2 = shopRank(name, 2), best = top2[0];
+  let art, note = '';
+  // Eindeutiger Treffer (oder klar vorne): übernehmen, auch bei kleinem Tippfehler
+  if (best && (best.score >= 55 || (best.score >= 40 && (!top2[1] || best.score - top2[1].score >= 4)))) {
+    art = best;
+    if (shopFold(best.n) !== shopFold(name)) note = '<b>' + escapeHtml(best.n) + '</b> auf die Liste gelegt';
+  } else {
     const sh = ensureShop();
-    const a = { n: name, c: 'sonst', e: shopCat('sonst').e, own: true };
-    sh.custom.push({ n: a.n, c: a.c, e: a.e });
-    return a;
-  })();
+    art = { n: name, c: 'sonst', e: shopCat('sonst').e, own: true };
+    sh.custom.push({ n: art.n, c: art.c, e: art.e });
+    note = 'Neuer Artikel <b>' + escapeHtml(name) + '</b> in „Sonstiges"';
+  }
   shopAdd(art, null);
   habitInput.value = '';
   savePlanner(); renderPlanner();
+  if (note) showToast(note, 2500);
 }
+
+// ---- Vorschläge beim Tippen (über der Eingabeleiste) ----
+
+const shopSuggestEl = document.createElement('div');
+shopSuggestEl.className = 'shop-suggest';
+shopSuggestEl.hidden = true;
+document.querySelector('.add-bar').appendChild(shopSuggestEl);
+
+function shopSuggestRender() {
+  const q = habitInput.value.trim();
+  if (currentView !== 'planner' || plannerState.tab !== 'shop' || !q) { shopSuggestEl.hidden = true; return; }
+  const sh = ensureShop(), hits = shopRank(q, 5);
+  const exact = hits.length && hits[0].score >= 98;
+  let h = hits.map((a, i) => {
+    const on = sh.list.some(x => shopKey(x.n) === shopKey(a.n));
+    return '<button type="button" class="chip' + (i === 0 && a.score >= 55 ? ' first' : '') + '" data-sg="add" data-n="' + escapeHtml(a.n) + '" aria-pressed="' + on + '">' + escapeHtml(a.e) + ' ' + escapeHtml(a.n) + (on ? ' ✓' : '') + '</button>';
+  }).join('');
+  if (!exact) h += '<button type="button" class="chip add" data-sg="new" data-n="' + escapeHtml(q.slice(0, 30)) + '">＋ „' + escapeHtml(q.slice(0, 20)) + '“ neu</button>';
+  shopSuggestEl.innerHTML = h;
+  shopSuggestEl.hidden = false;
+}
+habitInput.addEventListener('input', shopSuggestRender);
+document.addEventListener('click', (e) => { if (!e.target.closest('.shop-suggest')) shopSuggestRender(); });
+shopSuggestEl.addEventListener('pointerdown', (e) => e.preventDefault());   // Tastatur bleibt offen
+shopSuggestEl.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-sg]');
+  if (!b) return;
+  e.stopPropagation();
+  if (b.dataset.sg === 'add') {
+    const art = shopFind(b.dataset.n);
+    if (art) { shopAdd(art, null); habitInput.value = ''; savePlanner(); renderPlanner(); shopSuggestRender(); }
+  } else {
+    habitInput.value = '';
+    openShopSheet({ n: b.dataset.n, c: 'sonst', e: shopCat('sonst').e, own: true, isNew: true });
+    shopSuggestRender();
+  }
+});
 
 // ---- Klicks auf Kacheln ----
 

@@ -107,3 +107,9 @@ oder Trainings-CSV).
 
 ### 2.9.2
 - Schlaf, Statistik: Aufstehzeit wird als Einschlafzeit + Dauer berechnet (vorher konnte eine Nacht wie 09:00–12:30 die Achse über 24 Stunden aufziehen). „Typisch Einschlafen/Aufstehen" ist jetzt der Median, die Regelmäßigkeit nutzt die robuste Streuung (MAD) statt der Standardabweichung. Ausreißer im Diagramm sind hohle Punkte am Rand, die Linie wird dort unterbrochen.
+
+### 2.10.0
+- Einkauf: Smarte Erkennung beim Anlegen. „Hack" findet „Veggie-Hack", außerdem Mehrzahl (Tomate/Tomaten), Umlaute (kaese/Käse, apfel/Äpfel), angefangene Wörter und kleine Tippfehler. Beim Tippen erscheinen Vorschläge über der Leiste, Enter nimmt den besten eindeutigen Treffer, nur sonst entsteht ein neuer Artikel. Die Katalog-Suche nutzt dieselbe Erkennung.
+
+### 2.10.1
+- Überall nichts mehr markierbar (Überschriften, Karten, Beschriftungen, kein Kopieren-Menü beim langen Drücken). Ausgenommen sind Eingabefelder und der Notiz-Editor.

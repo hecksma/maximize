@@ -123,3 +123,48 @@ function shopFind(name) {
   }
   return null;
 }
+
+// ---- Smarte Suche: findet Artikel auch bei Wortteilen ("Hack" -> "Veggie-Hack"), Mehrzahl und kleinen Tippfehlern ----
+
+const shopFold = (t) => String(t).toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss').replace(/ae/g, 'a').replace(/oe/g, 'o').replace(/ue/g, 'u').replace(/[^a-z0-9]+/g, ' ').trim();
+// Grobe Wortstämme: Tomate/Tomaten, Apfel/Äpfel, Banane/Bananen
+const shopStem = (w) => w.length > 4 ? w.replace(/(en|er|n|e|s)$/, '') : w;
+function shopLev(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 3;
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+function shopScore(q, name) {
+  const n = shopFold(name);
+  if (!q || !n) return 0;
+  if (n === q) return 100;
+  const toks = n.split(' '), qs = shopStem(q);
+  if (n.replace(/ /g, '') === q.replace(/ /g, '')) return 98;
+  if (toks.some(t => t === q) ) return 80 - Math.min(10, toks.length * 2);   // ein ganzes Wort ist gleich ("Hack" in "Veggie Hack")
+  if (shopStem(n) === qs || toks.some(t => shopStem(t) === qs)) return 78;
+  if (n.startsWith(q)) return 76;
+  if (toks.some(t => t.startsWith(q))) return 72;
+  if (q.length >= 3 && toks.some(t => shopStem(t).startsWith(qs))) return 66;
+  if (q.length >= 3 && n.includes(q)) return 58;
+  if (q.length >= 4) {
+    const lim = q.length >= 7 ? 2 : 1;
+    const dist = Math.min(shopLev(q, n), ...toks.map(t => shopLev(q, t)));
+    if (dist <= lim) return 45 - dist * 4;
+    // Angefangenes Wort mit Tippfehler ("Haferflok" -> "Haferflocken")
+    if (q.length >= 5 && toks.some(t => t.length > q.length && shopLev(q, t.slice(0, q.length)) <= 1)) return 42;
+  }
+  return 0;
+}
+// Gibt die besten Treffer zurück: { n, c, e, own, score }
+function shopRank(text, limit) {
+  const q = shopFold(text), sh = ensureShop(), all = [], seen = new Set();
+  if (!q) return [];
+  SHOP_CATS.forEach(c => shopArticles(c.k).forEach(a => { if (!seen.has(shopKey(a.n))) { seen.add(shopKey(a.n)); all.push(a); } }));
+  const res = all.map((a, i) => ({ a, i, s: shopScore(q, a.n) })).filter(x => x.s > 0)
+    .sort((p, r) => (r.s - p.s) || ((sh.counts[r.a.n] || 0) - (sh.counts[p.a.n] || 0)) || (p.i - r.i))
+    .map(x => Object.assign({ score: x.s }, x.a));
+  return limit ? res.slice(0, limit) : res;
+}
