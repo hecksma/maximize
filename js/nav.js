@@ -131,7 +131,7 @@ window.addEventListener('popstate', () => {
   else if (currentView === 'planner' && plannerState.tab === 'secret') {
     lockSecret(); window.scrollTo(0, 0);
   }
-  else if (currentView === 'planner' && plannerState.tab === 'notes') {
+  else if (currentView === 'planner' && (plannerState.tab === 'notes' || plannerState.tab === 'shop')) {
     setPlannerTab('tasks'); window.scrollTo(0, 0);
   }
   // 3) vom Gym-Hauptbildschirm zu den Habits
@@ -212,7 +212,8 @@ document.addEventListener('touchend', (e) => {
     const want = next ? 'stats' : 'night';
     if (want !== sleepState.tab) { sleepState.tab = want; renderSleep(); window.scrollTo(0, 0); }
   } else if (currentView === 'planner' && plannerState.tab !== 'secret') {
-    const want = next ? 'notes' : 'tasks';
+    const order = ['tasks', 'notes', 'shop'], at = order.indexOf(plannerState.tab);
+    const want = order[Math.max(0, Math.min(order.length - 1, at + (next ? 1 : -1)))];
     if (want !== plannerState.tab) { setPlannerTab(want); window.scrollTo(0, 0); }
   } else if (currentView === 'gym' && gymState.page === 'home') {
     const want = next ? 'stats' : 'train';

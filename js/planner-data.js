@@ -10,7 +10,7 @@ const PLANNER_KEY = 'maximize-planner';
 //                  repeat (null oder {type:'daily'|'days'|'monthly', days[]}), done (Datum oder null), created }
 // planner.notes: { id, title, text, label, pinned, items (null oder [{id,t,done}] bei Checklisten), created, updated }
 // planner.labels: Liste der Labels, die für Aufgaben und Notizen zur Wahl stehen
-let planner = { tasks: [], notes: [], labels: [] };
+let planner = { tasks: [], notes: [], labels: [], shop: { list: [], recent: [], custom: [], counts: {}, log: [] } };
 
 const P_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -145,6 +145,7 @@ function sanitizePlanner(raw) {
     });
   });
   out.labels = Array.from(labels);
+  out.shop = sanitizeShop(raw.shop);
   const sc = sanitizeSecret(raw.secret);
   if (sc) out.secret = sc;
   // Erledigte Aufgaben, die älter als ein halbes Jahr sind, räumen wir auf
@@ -206,5 +207,6 @@ function mergePlanner(incoming) {
   incoming.notes.forEach(n => { if (!have.has(n.id)) { planner.notes.push(n); have.add(n.id); notes++; } });
   incoming.labels.forEach(l => { if (!planner.labels.includes(l)) planner.labels.push(l); });
   if (!planner.secret && incoming.secret) planner.secret = incoming.secret;
-  return { tasks, notes };
+  const shop = incoming.shop ? mergeShop(incoming.shop) : 0;
+  return { tasks, notes, shop };
 }

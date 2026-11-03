@@ -90,3 +90,17 @@ oder Trainings-CSV).
 - Schlaf, Statistik: Bei „Notizen und Schlaf" steht zusätzlich das Ø Gefühl (1 bis 5) mit und ohne die Notiz.
 - Aufstehen: Nach „Nein, andere Zeit" gibt es einen Knopf „Jetzt", der die aktuelle Uhrzeit sofort übernimmt (Fenster und Schlaf-Tab).
 - Diagramme: Beim Antippen zählt jetzt auch die Höhe, sodass bei der Regelmäßigkeit auch die Aufstehlinie wählbar ist (vorher gewann immer die Einschlaflinie).
+
+### 2.8.0
+- Neue Ansicht „Einkauf" im Planner (neben Aufgaben und Notizen): Katalog aus Kacheln nach Kategorien (js/shop-data.js, js/shop-view.js).
+- Antippen im Katalog legt auf die Liste, Antippen auf der Liste hakt ab („Zuletzt gekauft"), von dort mit einem Tipp zurück. Häufig gekaufte Artikel rücken in ihrer Kategorie nach vorn.
+- Lange drücken: Menge, bei eigenen Artikeln Name, Symbol (Emoji) und Kategorie. Eigene Artikel auch über die Leiste unten und das Plus. Suche mit „neu anlegen".
+- Daten in `planner.shop`, in Sicherung, Import (Merge) und Wisch-Navigation enthalten.
+
+### 2.8.1
+- Einkaufsliste: „Zu kaufen" ohne Kategorie-Überschriften (Reihenfolge nach Kategorien bleibt). „Von Liste nehmen" heißt jetzt „Entfernen".
+- Katalog auf vegetarisch/vegan umgestellt: kein Fleisch und Fisch mehr, dafür Veggie & Eiweiß (Tofu, Tempeh, Seitan, Falafel …), pflanzliche Milch- und Käse-Alternativen, mehr Gemüse, Kräuter, Getreide, Samen. Kategorie „Milch & Eier" heißt „Kühlregal".
+
+### 2.9.0
+- Einkauf: Umschalter Liste / Statistik. Jedes Abhaken wird mit Zeitpunkt protokolliert (`planner.shop.log`, höchstens 4000 Einträge; Zurückholen aus „Zuletzt gekauft" entfernt den Eintrag wieder).
+- Statistik: Einkäufe (Tage mit Käufen), Artikel, Ø Artikel pro Einkauf, Ø Abstand, Vergleich mit dem Zeitraum davor, Artikel pro Woche (12 Wochen), Top-10-Artikel, Anteile nach Kategorie. Zeitraum 30 Tage, 90 Tage oder alles. Gezählt wird ab dieser Version.

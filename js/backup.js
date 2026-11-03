@@ -135,7 +135,7 @@ async function importData(file) {
     if (data.planner) {
       const before = JSON.stringify(planner);
       const res = mergePlanner(sanitizePlanner(data.planner));
-      if (savePlanner()) { plannerText = ' Planner: ' + res.tasks + ' Aufgaben und ' + res.notes + ' Notizen neu.'; renderPlanner(); }
+      if (savePlanner()) { plannerText = ' Planner: ' + res.tasks + ' Aufgaben und ' + res.notes + ' Notizen neu' + (res.shop ? ', ' + res.shop + ' eigene Artikel' : '') + '.'; renderPlanner(); }
       else { planner = JSON.parse(before); plannerText = ' Planner-Daten konnten nicht gespeichert werden (Speicher voll).'; }
     }
     setStatus('Wiederhergestellt: ' + added + ' Habits neu, ' + (valid.length - added) + ' zusammengeführt'

@@ -54,7 +54,8 @@ function updatePlannerSubtitle() {
   const g = groupTasks();
   const open = g.overdue.length + g.today.length + g.soon.length + g.later.length + g.none.length;
   const now = g.overdue.length + g.today.length;
-  el.textContent = plannerState.tab === 'secret' ? 'Geheimbereich' : !planner.tasks.length ? 'Aufgaben und Notizen' : !open ? 'Alles erledigt' : open + ' offen' + (now ? ' · ' + now + ' heute' : '');
+  const shopN = ensureShop().list.length;
+  el.textContent = plannerState.tab === 'secret' ? 'Geheimbereich' : plannerState.tab === 'shop' ? (shopN ? shopN + ' auf der Einkaufsliste' : 'Einkaufsliste') : !planner.tasks.length ? 'Aufgaben und Notizen' : !open ? 'Alles erledigt' : open + ' offen' + (now ? ' · ' + now + ' heute' : '');
 }
 
 // ---- Aufgaben ----
@@ -154,7 +155,7 @@ function renderNotesHtml() {
 function renderPlanner() {
   document.querySelectorAll('.planner-tabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ptab === plannerState.tab)));
   document.querySelector('.planner-tabs').hidden = plannerState.tab === 'secret';
-  plannerEl.innerHTML = plannerState.tab === 'tasks' ? renderTasksHtml() : plannerState.tab === 'secret' ? renderSecretHtml() : renderNotesHtml();
+  plannerEl.innerHTML = plannerState.tab === 'tasks' ? renderTasksHtml() : plannerState.tab === 'secret' ? renderSecretHtml() : plannerState.tab === 'shop' ? renderShopHtml() : renderNotesHtml();
   updatePlannerSubtitle();
   updatePlannerChrome();
 }
@@ -164,6 +165,13 @@ function updatePlannerChrome() {
   if (currentView !== 'planner') return;
   const tasks = plannerState.tab === 'tasks', secret = plannerState.tab === 'secret';
   if (secret) { habitInput.placeholder = 'Neue geheime Notiz'; habitInput.setAttribute('aria-label', 'Titel der neuen geheimen Notiz'); habitInput.maxLength = 80; return; }
+  if (plannerState.tab === 'shop') {
+    habitInput.placeholder = 'Artikel hinzufügen, z. B. \'Milch\'';
+    habitInput.setAttribute('aria-label', 'Neuer Artikel für die Einkaufsliste');
+    habitInput.maxLength = 30;
+    document.getElementById('addBtn').setAttribute('aria-label', 'Eigenen Artikel mit Symbol und Kategorie anlegen');
+    return;
+  }
   habitInput.placeholder = tasks ? 'Neue Aufgabe, z. B. \'Paket abholen\'' : 'Neue Notiz, z. B. \'Idee: …\'';
   habitInput.setAttribute('aria-label', tasks ? 'Titel der neuen Aufgabe' : 'Titel der neuen Notiz');
   habitInput.maxLength = tasks ? 120 : 80;
@@ -177,7 +185,7 @@ function resetHabitChrome() {
 }
 
 function setPlannerTab(tab) {
-  plannerState.tab = tab === 'notes' ? 'notes' : 'tasks';
+  plannerState.tab = tab === 'notes' ? 'notes' : tab === 'shop' ? 'shop' : 'tasks';
   habitInput.value = '';
   renderPlanner();
 }
@@ -191,6 +199,7 @@ document.querySelector('.planner-tabs').addEventListener('click', (e) => {
 function plannerQuickAdd() {
   const title = habitInput.value.trim();
   if (!title) return;
+  if (plannerState.tab === 'shop') { shopQuickAdd(title); return; }
   if (plannerState.tab === 'tasks') {
     planner.tasks.push({ id: newId(), title, note: '', due: null, prio: 0, label: '', subs: [], repeat: null, done: null, created: todayStr() });
   } else {
@@ -200,7 +209,10 @@ function plannerQuickAdd() {
   savePlanner();
   renderPlanner();
 }
-function plannerPlus() { plannerState.tab === 'tasks' ? openTaskSheet(null) : openNoteSheet(null); }
+function plannerPlus() {
+  if (plannerState.tab === 'shop') { const n = habitInput.value.trim().slice(0, 30); habitInput.value = ''; openShopSheet({ n, c: 'sonst', e: shopCat('sonst').e, own: true, isNew: true }); }
+  else plannerState.tab === 'tasks' ? openTaskSheet(null) : openNoteSheet(null);
+}
 
 // ---- Klicks in der Liste ----
 

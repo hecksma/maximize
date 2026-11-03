@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" /></noscript>
 <!-- Aussehen der App -->
-<link rel="stylesheet" href="css/style.css?v=2.7.1" />
+<link rel="stylesheet" href="css/style.css?v=2.9.0" />
 </head>
 <body>
 
@@ -103,6 +103,7 @@
   <div class="seg planner-tabs" role="group" aria-label="Ansicht">
     <button type="button" data-ptab="tasks" aria-pressed="true">Aufgaben</button>
     <button type="button" data-ptab="notes" aria-pressed="false">Notizen</button>
+    <button type="button" data-ptab="shop" aria-pressed="false">Einkauf</button>
   </div>
 
   <div id="plannerContent"></div>
@@ -427,6 +428,27 @@
   </form>
 </dialog>
 
+<!-- Einkauf: Menge und eigene Artikel -->
+<dialog id="shopSheet" aria-labelledby="shHead">
+  <form id="shForm">
+    <h2 id="shHead" tabindex="-1">Artikel</h2>
+    <div class="field"><label for="shName">Name</label><input type="text" id="shName" class="text-input" maxlength="30" autocomplete="off" /></div>
+    <div class="field"><label for="shQty">Menge <span style="opacity:.7">(optional)</span></label><input type="text" id="shQty" class="text-input" maxlength="12" placeholder="z. B. 2 oder 500 g" autocomplete="off" /></div>
+    <div id="shOwnFields">
+      <div class="field"><label for="shEmoji">Symbol</label><input type="text" id="shEmoji" class="text-input" maxlength="8" autocomplete="off" aria-describedby="shEmojiHint" />
+        <div class="chips wrap" id="shEmojiChips" style="margin-top:8px;"></div></div>
+      <div class="field"><span class="label">Kategorie</span><div class="chips wrap" id="shCats"></div></div>
+    </div>
+    <p class="sheet-msg" id="shMsg" role="alert"></p>
+    <div class="sheet-actions">
+      <button type="button" class="btn danger" id="shDelete">Entfernen</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="shCancel">Abbrechen</button>
+      <button type="submit" class="btn primary" id="shSave">Auf die Liste</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- Planner: Notiz anlegen oder bearbeiten -->
 <dialog id="noteSheet" class="note-full" aria-labelledby="ntHead">
   <form id="ntForm">
@@ -694,23 +716,25 @@
 </dialog>
 
 <!-- Die Skripte laufen der Reihe nach. Jedes hat einen Bereich der App, siehe README.md -->
-<script src="js/core.js?v=2.7.1"></script>
-<script src="js/habits.js?v=2.7.1"></script>
-<script src="js/settings.js?v=2.7.1"></script>
-<script src="js/stats.js?v=2.7.1"></script>
-<script src="js/gym-data.js?v=2.7.1"></script>
-<script src="js/gym-records.js?v=2.7.1"></script>
-<script src="js/timepick.js?v=2.7.1"></script>
-<script src="js/sleep-data.js?v=2.7.1"></script>
-<script src="js/gym-view.js?v=2.7.1"></script>
-<script src="js/gym-workout.js?v=2.7.1"></script>
-<script src="js/sleep-view.js?v=2.7.1"></script>
-<script src="js/planner-data.js?v=2.7.1"></script>
-<script src="js/planner-view.js?v=2.7.1"></script>
-<script src="js/secret.js?v=2.7.1"></script>
-<script src="js/backup.js?v=2.7.1"></script>
-<script src="js/nav.js?v=2.7.1"></script>
-<script src="js/main.js?v=2.7.1"></script>
+<script src="js/core.js?v=2.9.0"></script>
+<script src="js/habits.js?v=2.9.0"></script>
+<script src="js/settings.js?v=2.9.0"></script>
+<script src="js/stats.js?v=2.9.0"></script>
+<script src="js/gym-data.js?v=2.9.0"></script>
+<script src="js/gym-records.js?v=2.9.0"></script>
+<script src="js/timepick.js?v=2.9.0"></script>
+<script src="js/sleep-data.js?v=2.9.0"></script>
+<script src="js/gym-view.js?v=2.9.0"></script>
+<script src="js/gym-workout.js?v=2.9.0"></script>
+<script src="js/sleep-view.js?v=2.9.0"></script>
+<script src="js/planner-data.js?v=2.9.0"></script>
+<script src="js/shop-data.js?v=2.9.0"></script>
+<script src="js/planner-view.js?v=2.9.0"></script>
+<script src="js/shop-view.js?v=2.9.0"></script>
+<script src="js/secret.js?v=2.9.0"></script>
+<script src="js/backup.js?v=2.9.0"></script>
+<script src="js/nav.js?v=2.9.0"></script>
+<script src="js/main.js?v=2.9.0"></script>
 
 </body>
 </html>
