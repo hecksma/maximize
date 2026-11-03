@@ -222,13 +222,15 @@ function chartSvg(points) {
 // und sein Wert in einer Infoblase gezeigt (showTip steht in core.js).
 let scrubbing = null;
 
-function selectChartPoint(svg, clientX) {
+function selectChartPoint(svg, clientX, clientY) {
   const rect = svg.getBoundingClientRect();
   const k = rect.width / 320; // das Diagramm ist skaliert: viewBox-Breite 320
-  let best = null, bestDist = Infinity;
+  let best = null, bestDx = Infinity, bestDy = Infinity;
+  // Erst nach der Spalte (links/rechts), bei mehreren Linien an derselben Stelle nach der Höhe
   svg.querySelectorAll('circle[data-tip]').forEach(c => {
-    const d = Math.abs(rect.left + Number(c.getAttribute('cx')) * k - clientX);
-    if (d < bestDist) { bestDist = d; best = c; }
+    const dx = Math.abs(rect.left + Number(c.getAttribute('cx')) * k - clientX);
+    const dy = clientY == null ? 0 : Math.abs(rect.top + Number(c.getAttribute('cy')) * k - clientY);
+    if (dx < bestDx - 1 || (Math.abs(dx - bestDx) <= 1 && dy < bestDy)) { bestDx = Math.min(dx, bestDx); bestDy = dy; best = c; }
   });
   if (!best) return;
   svg.querySelectorAll('circle.sel').forEach(c => c.classList.remove('sel'));
@@ -240,9 +242,9 @@ document.addEventListener('pointerdown', (e) => {
   const svg = e.target.closest && e.target.closest('.chart-svg');
   if (!svg) return;
   scrubbing = svg;
-  selectChartPoint(svg, e.clientX);
+  selectChartPoint(svg, e.clientX, e.clientY);
 });
-document.addEventListener('pointermove', (e) => { if (scrubbing) selectChartPoint(scrubbing, e.clientX); });
+document.addEventListener('pointermove', (e) => { if (scrubbing) selectChartPoint(scrubbing, e.clientX, e.clientY); });
 ['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, () => { scrubbing = null; }));
 
 // Zurück von einer Übungsseite: ins Training (falls eines läuft) oder zur Übungsliste, an der alten Scroll-Position

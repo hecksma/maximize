@@ -82,3 +82,11 @@ oder Trainings-CSV).
 - Notiz-Editor mit Formatierung: Überschrift, fett, kursiv, unterstrichen, durchgestrichen, Aufzählung (gespeichert als bereinigtes HTML im Feld `html`, `text` bleibt Klartext für die Suche).
 - Checklisten-Einträge per Griff verschiebbar.
 - Editor-Leiste neu geordnet: Anheften, Checkliste, Löschen oben, Formatierung und Labels unten.
+
+### 2.6.2
+- Geheim-Geste wieder streng: kein verschobener Startpunkt mehr, Toleranz höchstens 0,12 (vorher bis 0,22); Kreis, Quadrat, Dreieck, Stern, Zickzack öffnen nicht. Rückwärts gezeichnet und kleiner geht weiter.
+
+### 2.7.0
+- Schlaf, Statistik: Bei „Notizen und Schlaf" steht zusätzlich das Ø Gefühl (1 bis 5) mit und ohne die Notiz.
+- Aufstehen: Nach „Nein, andere Zeit" gibt es einen Knopf „Jetzt", der die aktuelle Uhrzeit sofort übernimmt (Fenster und Schlaf-Tab).
+- Diagramme: Beim Antippen zählt jetzt auch die Höhe, sodass bei der Regelmäßigkeit auch die Aufstehlinie wählbar ist (vorher gewann immer die Einschlaflinie).

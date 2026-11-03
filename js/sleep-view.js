@@ -192,7 +192,7 @@ function wakeCardHtml() {
   return '<div class="stats-title" style="margin-top:20px;">Guten Morgen</div>'
     + '<div class="night-card"><p style="margin:0 0 12px;font-size:16px;">Warst du um <b>' + a.time + ' Uhr</b> wach?</p>'
     + (edit ? '<label class="ne-label" for="wakeTimeInline">Wann bist du aufgewacht?</label><input type="text" readonly id="wakeTimeInline" class="time-input tp" data-tp="time" data-title="Aufgewacht um" value="' + a.time + '" aria-label="Aufwachzeit" /><p class="status error" id="wakeMsgInline" role="alert"></p>'
-        + '<div class="end-row"><button type="button" class="btn" data-act="s-wake-back">Zurück</button><span class="spacer"></span><button type="button" class="btn primary" data-act="s-wake-save">Speichern</button></div>'
+        + '<div class="end-row"><button type="button" class="btn" data-act="s-wake-back">Zurück</button><button type="button" class="btn" data-act="s-wake-now">Jetzt</button><span class="spacer"></span><button type="button" class="btn primary" data-act="s-wake-save">Speichern</button></div>'
       : '<div class="end-row" style="margin-top:6px;"><button type="button" class="btn" data-act="s-wake-no">Nein, andere Zeit</button><span class="spacer"></span><button type="button" class="btn primary" data-act="s-wake-yes">Ja</button></div>')
     + '</div>';
 }
@@ -218,6 +218,7 @@ function maybeAskWake() {
   document.getElementById('wakeText').innerHTML = 'Warst du um <b>' + sleepActive.time + ' Uhr</b> wach?';
   document.getElementById('wakeEdit').hidden = true;
   document.getElementById('wakeNo').hidden = false;
+  document.getElementById('wakeNow').hidden = true;
   document.getElementById('wakeYes').textContent = 'Ja';
   document.getElementById('wakeTime').value = sleepActive.time;
   document.getElementById('wakeMsg').textContent = '';
@@ -226,11 +227,14 @@ function maybeAskWake() {
 }
 
 // Speichert mit der angegebenen Aufstehzeit (null = Weckzeit). Gibt Fehlertext zurück oder ''.
-function saveWake(timeStr) {
+function saveWake(timeStr, useNow) {
   const a = sleepActive;
   if (!a) return '';
   let wakeMs = a.wake, how = 'ok';
-  if (timeStr && timeStr !== a.time) {
+  if (useNow) {
+    wakeMs = Date.now(); how = 'edit';
+    if (wakeMs - a.bed < 20 * 60000) return 'Die Aufwachzeit muss nach dem Einschlafen liegen.';
+  } else if (timeStr && timeStr !== a.time) {
     if (!TIME_RE.test(timeStr)) return 'Bitte gib eine Uhrzeit an.';
     const d = new Date(a.wake);
     d.setHours(+timeStr.slice(0, 2), +timeStr.slice(3, 5), 0, 0);
@@ -250,8 +254,13 @@ document.getElementById('wakeYes').addEventListener('click', () => {
   const msg = saveWake(editing ? document.getElementById('wakeTime').value : null);
   if (msg) document.getElementById('wakeMsg').textContent = msg; else wakeSheet.close();
 });
+document.getElementById('wakeNow').addEventListener('click', () => {
+  const msg = saveWake(null, true);
+  if (msg) document.getElementById('wakeMsg').textContent = msg; else wakeSheet.close();
+});
 document.getElementById('wakeNo').addEventListener('click', () => {
   document.getElementById('wakeEdit').hidden = false;
+  document.getElementById('wakeNow').hidden = false;
   document.getElementById('wakeNo').hidden = true;
   document.getElementById('wakeYes').textContent = 'Speichern';
 });
@@ -285,6 +294,7 @@ sleepEl.addEventListener('click', (e) => {
   else if (act === 's-wake-yes') saveWake(null);
   else if (act === 's-wake-no') { sleepState.askEdit = true; renderSleep(); }
   else if (act === 's-wake-back') { sleepState.askEdit = false; renderSleep(); }
+  else if (act === 's-wake-now') { const m = saveWake(null, true); if (m) document.getElementById('wakeMsgInline').textContent = m; }
   else if (act === 's-wake-save') { const m = saveWake(document.getElementById('wakeTimeInline').value); if (m) document.getElementById('wakeMsgInline').textContent = m; }
   else if (act === 's-rate' && night) { const v = Number(b.dataset.v); night.rating = night.rating === v ? null : v; saveSleep(); renderSleep(); }
   else if (act === 's-tag' && night) {
@@ -732,16 +742,23 @@ function renderSleepStats() {
   const tagRows = noteDefs.map(def => {
     const w = nights.filter(def.has), wo = nights.filter(n => !def.has(n));
     if (w.length < 3 || wo.length < 3) return null;
-    return { t: def.t, n: w.length, a: avg(w.map(nightMinutes)), b: avg(wo.map(nightMinutes)) };
+    const rw = w.filter(n => n.rating), rwo = wo.filter(n => n.rating);
+    return { t: def.t, n: w.length, a: avg(w.map(nightMinutes)), b: avg(wo.map(nightMinutes)), ra: rw.length >= 2 && rwo.length >= 2 ? avg(rw.map(n => n.rating)) : null, rb: rw.length >= 2 && rwo.length >= 2 ? avg(rwo.map(n => n.rating)) : null };
   }).filter(Boolean).sort((p, q) => Math.abs(q.a - q.b) - Math.abs(p.a - p.b));
   const tagUsed = noteDefs.filter(def => nights.some(def.has)).length;
   html += '<div class="stats-title">Notizen und Schlaf</div>';
   if (tagRows.length) {
-    html += '<p class="stats-note" style="margin:-6px 2px 8px;">Ø Schlafdauer in Nächten mit der Notiz, verglichen mit Nächten ohne.</p><div class="pr-list">'
+    const sgn = (v) => (v > 0 ? '+' : v < 0 ? '−' : '');
+    const col = (d, th) => d < -th ? 'var(--danger)' : d > th ? 'var(--amber)' : 'var(--ink-dim)';
+    html += '<p class="stats-note" style="margin:-6px 2px 8px;">Ø in Nächten mit der Notiz. Darunter der Unterschied zu allen Nächten ohne sie. Gefühl ist deine Bewertung von 1 bis 5.</p>'
+      + '<div class="nt-table"><div class="nt-head"><span>Notiz</span><span>Schlaf</span><span>Gefühl</span></div>'
       + tagRows.map(r => {
         const diff = Math.round(r.a - r.b);
-        return '<div class="pr-row"><span class="pr-name">' + escapeHtml(r.t) + '<span class="pr-kind">' + r.n + ' Nächte</span></span><span class="pr-val">' + fmtDur(Math.round(r.a)) + '</span>'
-          + '<span class="pr-date" style="color:' + (diff < -10 ? 'var(--danger)' : diff > 10 ? 'var(--amber)' : 'var(--ink-dim)') + '">' + (diff > 0 ? '+' : diff < 0 ? '−' : '') + Math.abs(diff) + ' min</span></div>';
+        const feel = r.ra == null ? '<span class="nt-val">–</span><span class="nt-sub">zu wenig</span>'
+          : '<span class="nt-val">' + nf.format(Math.round(r.ra * 10) / 10) + '</span><span class="nt-sub" style="color:' + col(r.ra - r.rb, 0.3) + '">' + sgn(Math.round((r.ra - r.rb) * 10)) + nf.format(Math.abs(Math.round((r.ra - r.rb) * 10) / 10)) + '</span>';
+        return '<div class="nt-row"><span class="nt-name">' + escapeHtml(r.t) + '<span class="nt-sub">' + r.n + ' Nächte</span></span>'
+          + '<span class="nt-cell"><span class="nt-val">' + fmtDur(Math.round(r.a)) + '</span><span class="nt-sub" style="color:' + col(diff, 10) + '">' + sgn(diff) + Math.abs(diff) + ' min</span></span>'
+          + '<span class="nt-cell">' + feel + '</span></div>';
       }).join('') + '</div>';
   } else {
     html += '<p class="hint">' + (tagUsed ? 'Sobald eine Notiz in mindestens 3 Nächten (und 3 ohne sie) vorkommt, siehst du hier den Vergleich.' : 'Hake bei einer Nacht Notizen wie „Koffein“ an. Nach ein paar Nächten siehst du hier, was sich auf deinen Schlaf auswirkt.') + '</p>';

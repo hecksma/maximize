@@ -116,7 +116,16 @@ function noteCardHtml(n) {
       + (!open.length && n.items.length ? '<span class="nl dim">Alles erledigt</span>' : '')
       + (done && open.length ? '<span class="nl dim">' + done + ' erledigt</span>' : '');
   } else if (n.text.trim()) {
-    body = '<span class="np">' + escapeHtml(n.text.trim().slice(0, 400)) + '</span>';
+    const ls = n.text.trim().split('\n'), shown = [];
+    let k = 0, lines = 0;
+    for (; k < ls.length && lines < 6; k++) {
+      const l = ls[k].trim();
+      if (!l) { if (shown.length && shown[shown.length - 1]) shown.push(''); continue; }
+      shown.push(l.slice(0, 120)); lines++;
+    }
+    while (shown.length && !shown[shown.length - 1]) shown.pop();
+    const more = ls.slice(k).some(l => l.trim());
+    body = '<span class="np">' + shown.map(l => l ? '<span class="npl">' + escapeHtml(l) + '</span>' : '<span class="npgap"></span>').join('') + (more ? '<span class="npl dim">…</span>' : '') + '</span>';
   }
   return '<button type="button" class="note-card" data-act="n-open" data-id="' + n.id + '">'
     + '<span class="note-top"><span class="note-title">' + escapeHtml(n.title || (n.items ? 'Checkliste' : 'Notiz')) + '</span>'
@@ -500,7 +509,7 @@ document.getElementById('ntList').addEventListener('click', () => {
     ntRich.innerHTML = textToHtml(nt.text).replace(/^<div><br><\/div>$/, '');
     nt.items = null;
   } else {
-    const lines = ntRich.innerText.split('\n').map(s => s.trim()).filter(Boolean);
+    const lines = htmlToText(cleanHtml(ntRich.innerHTML)).replace(/^• /gm, '').split('\n').map(s => s.trim()).filter(Boolean);
     nt.items = sanitizeSubs(lines.map(t => ({ t, done: false })), 300);
     if (!nt.items.length) nt.items = [{ id: newId(), t: '', done: false }];
     nt.text = '';
@@ -512,8 +521,8 @@ function closeNoteSheet() { if (noteSheet.open) noteSheet.close(); }
 // Wie in einer Notiz-App: Beim Zurückgehen wird automatisch gespeichert
 function commitNote() {
   const title = document.getElementById('ntTitle').value.trim().slice(0, 80);
-  const text = nt.items ? '' : ntRich.innerText.replace(/\n{3,}/g, '\n\n').replace(/\s+$/, '').slice(0, 10000);
   const html = nt.items ? '' : cleanHtml(ntRich.innerHTML);
+  const text = nt.items ? '' : htmlToText(html).slice(0, 10000);
   const items = nt.items ? nt.items.filter(s => s.t.trim()).map(s => ({ id: s.id, t: s.t.trim(), done: s.done })) : null;
   if (!title && !text.trim() && !(items && items.length)) return false;
   const now = Date.now();

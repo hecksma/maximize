@@ -40,6 +40,27 @@ function cleanHtml(str) {
   const r = walk(doc.body);
   return r.length > 30000 ? '' : r;
 }
+// Klartext aus bereinigtem HTML: jede Zeile, jeder Absatz und jeder Listenpunkt bekommt einen Zeilenumbruch
+function htmlToText(html) {
+  let doc;
+  try { doc = new DOMParser().parseFromString('<body>' + html + '</body>', 'text/html'); } catch (e) { return ''; }
+  let out = '';
+  const nl = () => { if (out && !out.endsWith('\n')) out += '\n'; };
+  const walk = (node) => node.childNodes.forEach(c => {
+    if (c.nodeType === 3) out += c.nodeValue;
+    else if (c.nodeType === 1) {
+      const t = c.tagName.toLowerCase();
+      if (t === 'br') { out += '\n'; return; }
+      const block = t === 'div' || t === 'h2' || t === 'li' || t === 'ul';
+      if (block) nl();
+      if (t === 'li') out += '• ';
+      walk(c);
+      if (block) nl();
+    }
+  });
+  walk(doc.body);
+  return out.replace(/\n{3,}/g, '\n\n').replace(/\s+$/, '');
+}
 function textToHtml(t) {
   return String(t || '').split('\n').map(l => '<div>' + (l ? l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '<br>') + '</div>').join('');
 }
@@ -107,14 +128,15 @@ function sanitizePlanner(raw) {
   (Array.isArray(raw.notes) ? raw.notes : []).forEach(n => {
     if (!n || out.notes.length >= 3000) return;
     const items = Array.isArray(n.items) ? sanitizeSubs(n.items, 300) : null;
-    const title = cleanStr(n.title, 80), text = typeof n.text === 'string' ? n.text.slice(0, 10000) : '';
+    const title = cleanStr(n.title, 80), html = items ? '' : cleanHtml(n.html);
+    const text = html ? htmlToText(html).slice(0, 10000) : (typeof n.text === 'string' ? n.text.slice(0, 10000) : '');
     if (!title && !text.trim() && !(items && items.length)) return;
     let id = typeof n.id === 'string' && ID_RE.test(n.id) ? n.id : newId();
     if (ids.has(id)) id = newId();
     ids.add(id);
     out.notes.push({
       id, title, text, items,
-      html: items ? '' : cleanHtml(n.html),
+      html,
       label: addLabel(cleanStr(n.label, 20)),
       pinned: !!n.pinned,
       secret: !!n.secret,
