@@ -104,3 +104,6 @@ oder Trainings-CSV).
 ### 2.9.0
 - Einkauf: Umschalter Liste / Statistik. Jedes Abhaken wird mit Zeitpunkt protokolliert (`planner.shop.log`, höchstens 4000 Einträge; Zurückholen aus „Zuletzt gekauft" entfernt den Eintrag wieder).
 - Statistik: Einkäufe (Tage mit Käufen), Artikel, Ø Artikel pro Einkauf, Ø Abstand, Vergleich mit dem Zeitraum davor, Artikel pro Woche (12 Wochen), Top-10-Artikel, Anteile nach Kategorie. Zeitraum 30 Tage, 90 Tage oder alles. Gezählt wird ab dieser Version.
+
+### 2.9.2
+- Schlaf, Statistik: Aufstehzeit wird als Einschlafzeit + Dauer berechnet (vorher konnte eine Nacht wie 09:00–12:30 die Achse über 24 Stunden aufziehen). „Typisch Einschlafen/Aufstehen" ist jetzt der Median, die Regelmäßigkeit nutzt die robuste Streuung (MAD) statt der Standardabweichung. Ausreißer im Diagramm sind hohle Punkte am Rand, die Linie wird dort unterbrochen.

@@ -68,7 +68,7 @@ function renderShopHtml() {
 
 function shopStatsHtml() {
   const sh = ensureShop(), log = sh.log, P = shopState.period;
-  const chips = '<div class="chips wrap" style="margin:10px 0 4px;">' + [[30, '30 Tage'], [90, '90 Tage'], [0, 'Alles']].map(([v, l]) => '<button type="button" class="chip" data-sh="period" data-v="' + v + '" aria-pressed="' + (P === v) + '">' + l + '</button>').join('') + '</div>';
+  const chips = '<div class="seg shop-period" role="group" aria-label="Zeitraum">' + [[30, '30 Tage'], [90, '90 Tage'], [0, 'Alles']].map(([v, l]) => '<button type="button" data-sh="period" data-v="' + v + '" aria-pressed="' + (P === v) + '">' + l + '</button>').join('') + '</div>';
   if (!log.length) return '<div class="empty-state" style="margin-top:20px;"><div class="big">Noch keine Statistik</div>Sobald du Artikel auf der Liste abhakst, siehst du hier, wie oft du einkaufst und was du am häufigsten kaufst. Gezählt wird ab jetzt.</div>';
   const now = Date.now(), DAY = 864e5;
   const from = P ? now - P * DAY : 0, prevFrom = P ? now - 2 * P * DAY : 0;
@@ -80,7 +80,7 @@ function shopStatsHtml() {
   const nf1 = (v) => nf.format(Math.round(v * 10) / 10);
   const card = (v, l, sub) => '<div class="stat-card"><div class="stat-value">' + v + '</div><div class="stat-label">' + l + '</div>' + (sub ? '<div class="stat-sub">' + sub + '</div>' : '') + '</div>';
   const vs = (c, p) => P ? 'davor ' + p : '';
-  let h = chips + '<div class="stat-grid" style="margin-top:8px;">'
+  let h = chips + '<div class="stat-grid shop-stats-grid">'
     + card(dCur.length, 'Einkäufe', vs(dCur.length, dPrev.length))
     + card(cur.length, 'Artikel gekauft', vs(cur.length, prev.length))
     + card(dCur.length ? nf1(cur.length / dCur.length) : '–', 'Ø Artikel pro Einkauf', dPrev.length ? 'davor ' + nf1(prev.length / dPrev.length) : '')

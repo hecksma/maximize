@@ -20,6 +20,13 @@ const nightMin = (d) => (d.getHours() * 60 + d.getMinutes() - 720 + 1440) % 1440
 const fromNightMin = (v) => { const t = (Math.round(v) + 720) % 1440; return pad(Math.floor(t / 60)) + ':' + pad(t % 60); };
 const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
 const sd = (arr) => { const m = avg(arr); return Math.sqrt(avg(arr.map(x => (x - m) * (x - m)))); };
+// Robuste Werte: Ausreißer (z. B. ein Mittagsschlaf oder eine Nacht, die ganz aus der Reihe fällt) verzerren sie kaum
+const median = (arr) => { const a = arr.slice().sort((x, y) => x - y), m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
+// Streuung als MAD (mittlere Abweichung vom Median), mit 1,4826 skaliert: entspricht bei normalen Daten der Standardabweichung
+const robustSpread = (arr) => { const m = median(arr); return 1.4826 * median(arr.map(x => Math.abs(x - m))); };
+// Einschlaf- und Aufstehzeit auf einer gemeinsamen Achse: Aufstehen = Einschlafen + Dauer (so landet 09:00 bis 12:30 nicht an zwei Enden)
+const bedMin = (n) => nightMin(parseDT(n.bed));
+const wakeMin = (n) => bedMin(n) + nightMinutes(n);
 
 // Die nächste Weckzeit (Uhrzeit "HH:MM") nach dem Zeitpunkt from
 function nextWake(timeStr, from) {
@@ -676,21 +683,33 @@ function sleepBarsHtml(nights) {
 // Linien: Einschlaf- und Aufstehzeit der letzten Nächte (zeigt die Regelmäßigkeit)
 function rhythmSvg(nights) {
   const W = 320, H = 150, L = 38, R = 10, T = 12, B = 22, n = nights.length;
-  const beds = nights.map(x => nightMin(parseDT(x.bed))), wakes = nights.map(x => nightMin(parseDT(x.wake)));
-  const all = beds.concat(wakes);
+  const beds = nights.map(bedMin), wakes = nights.map(wakeMin);
+  // Ausreißer: weit weg vom Median. Sie bestimmen die Achse nicht mit und werden am Rand als hohle Punkte gezeigt
+  const out = (arr) => { const m = median(arr), th = Math.max(3 * robustSpread(arr), 150); return arr.map(v => Math.abs(v - m) > th); };
+  const bOut = n >= 5 ? out(beds) : beds.map(() => false), wOut = n >= 5 ? out(wakes) : wakes.map(() => false);
+  const inl = beds.filter((v, i) => !bOut[i]).concat(wakes.filter((v, i) => !wOut[i]));
+  const all = inl.length ? inl : beds.concat(wakes);
   let lo = Math.floor((Math.min.apply(null, all) - 20) / 60) * 60, hi = Math.ceil((Math.max.apply(null, all) + 20) / 60) * 60;
   if (hi - lo < 120) hi = lo + 120;
   const x = i => n === 1 ? (L + W - R) / 2 : L + i * (W - L - R) / (n - 1);
-  const y = v => T + (v - lo) * (H - T - B) / (hi - lo);
+  const y = v => T + (Math.max(lo, Math.min(hi, v)) - lo) * (H - T - B) / (hi - lo);
   const step = (hi - lo) > 480 ? 180 : 120;
   let grid = '';
   for (let v = lo; v <= hi; v += step) grid += '<line x1="' + L + '" y1="' + y(v).toFixed(1) + '" x2="' + (W - R) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--border)"/><text x="0" y="' + (y(v) + 3.5).toFixed(1) + '" fill="var(--ink-dim)" font-size="10">' + fromNightMin(v) + '</text>';
-  const line = (vals, color) => '<polyline points="' + vals.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ') + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
-    + vals.map((v, i) => '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(v).toFixed(1) + '" r="3" fill="' + color + '" data-tip="' + escapeHtml(dayShort(nights[i].wake) + ' · ' + (color === 'var(--sage)' ? 'Einschlafen ' : 'Aufstehen ') + fromNightMin(v)) + '"/>').join('');
+  const line = (vals, isOut, color) => {
+    // Linie nur zwischen aufeinanderfolgenden normalen Nächten
+    let runs = [], cur = [];
+    vals.forEach((v, i) => { if (isOut[i]) { if (cur.length) runs.push(cur); cur = []; } else cur.push(x(i).toFixed(1) + ',' + y(v).toFixed(1)); });
+    if (cur.length) runs.push(cur);
+    const lines = runs.filter(r => r.length > 1).map(r => '<polyline points="' + r.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>').join('');
+    const dots = vals.map((v, i) => '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(v).toFixed(1) + '" r="3" ' + (isOut[i] ? 'fill="var(--bg)" stroke="' + color + '" stroke-width="1.6"' : 'fill="' + color + '"') + ' data-tip="' + escapeHtml(dayShort(nights[i].wake) + ' · ' + (color === 'var(--sage)' ? 'Einschlafen ' : 'Aufstehen ') + fromNightMin(v) + (isOut[i] ? ' (Ausreißer)' : '')) + '"/>').join('');
+    return lines + dots;
+  };
   const every = n <= 7 ? 1 : n <= 12 ? 2 : 3;
   const labels = nights.map((nt, i) => ((n - 1 - i) % every === 0) ? '<text x="' + x(i).toFixed(1) + '" y="' + (H - 6) + '" fill="var(--ink-dim)" font-size="9.5" text-anchor="middle">' + parseDT(nt.wake).getDate() + '.</text>' : '').join('');
-  return '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Einschlaf- und Aufstehzeiten. Antippen zeigt Werte.">' + grid + labels + line(beds, 'var(--sage)') + line(wakes, 'var(--amber)') + '</svg>'
-    + '<p class="stats-note" style="margin:4px 2px 0;"><span class="leg" style="background:var(--sage)"></span> Einschlafen <span class="leg" style="background:var(--amber)"></span> Aufstehen</p>';
+  const anyOut = bOut.concat(wOut).some(Boolean);
+  return '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Einschlaf- und Aufstehzeiten. Antippen zeigt Werte.">' + grid + labels + line(beds, bOut, 'var(--sage)') + line(wakes, wOut, 'var(--amber)') + '</svg>'
+    + '<p class="stats-note" style="margin:4px 2px 0;"><span class="leg" style="background:var(--sage)"></span> Einschlafen <span class="leg" style="background:var(--amber)"></span> Aufstehen' + (anyOut ? ' · hohle Punkte = Ausreißer, am Rand gezeigt' : '') + '</p>';
 }
 
 function renderSleepStats() {
@@ -710,16 +729,16 @@ function renderSleepStats() {
   const last30 = nights.filter(n => nightDay(n) >= cutoff30);
   const avgDur = (list) => list.length ? Math.round(avg(list.map(nightMinutes))) : null;
   const debt = last7.reduce((a, n) => a + Math.max(0, sleep.goalMin - nightMinutes(n)), 0);
-  const bedAvg = fromNightMin(avg(last14.map(n => nightMin(parseDT(n.bed)))));
-  const wakeAvg = fromNightMin(avg(last14.map(n => nightMin(parseDT(n.wake)))));
+  const bedAvg = fromNightMin(median(last14.map(bedMin)));
+  const wakeAvg = fromNightMin(median(last14.map(wakeMin)));
   const card = (v, l, s) => '<div class="stat-card"><div class="stat-value">' + v + '</div><div class="stat-label">' + l + '</div>' + (s ? '<div class="stat-sub">' + s + '</div>' : '') + '</div>';
 
   let html = '<div class="stats-title" style="margin-top:20px;">Kalender</div>' + sleepCalendarHtml(byDay, today)
     + '<div class="stats-title">Zahlen</div><div class="stat-grid">'
     + card(avgDur(last7) ? fmtDur(avgDur(last7)) : '–', 'Ø Schlaf, 7 Nächte', 'Ziel ' + fmtDur(sleep.goalMin))
     + card(avgDur(last30) ? fmtDur(avgDur(last30)) : '–', 'Ø Schlaf, 30 Tage', last30.length + ' Nächte')
-    + card(bedAvg, 'Ø Einschlafen', 'letzte ' + last14.length + ' Nächte')
-    + card(wakeAvg, 'Ø Aufstehen', 'letzte ' + last14.length + ' Nächte')
+    + card(bedAvg, 'Typisch Einschlafen', 'Median, letzte ' + last14.length + ' Nächte')
+    + card(wakeAvg, 'Typisch Aufstehen', 'Median, letzte ' + last14.length + ' Nächte')
     + card(debt ? fmtDur(debt) : '0 h', 'Schlafschuld, 7 Nächte', 'Summe unter dem Ziel')
     + card(last30.length ? Math.round(100 * last30.filter(n => nightMinutes(n) >= sleep.goalMin).length / last30.length) + ' %' : '–', 'Ziel erreicht', 'letzte 30 Tage')
     + '</div>'
@@ -727,11 +746,12 @@ function renderSleepStats() {
 
   // Regelmäßigkeit
   if (last14.length >= 3) {
-    const sdBed = Math.round(sd(last14.map(n => nightMin(parseDT(n.bed))))), sdWake = Math.round(sd(last14.map(n => nightMin(parseDT(n.wake)))));
+    const sdBed = Math.round(robustSpread(last14.map(bedMin))), sdWake = Math.round(robustSpread(last14.map(wakeMin)));
     const verdict = (m) => m <= 30 ? 'sehr regelmäßig' : m <= 60 ? 'ziemlich regelmäßig' : m <= 90 ? 'schwankend' : 'unregelmäßig';
     html += '<div class="stats-title">Regelmäßigkeit</div><div class="stat-grid">'
       + card('± ' + sdBed + ' min', 'Einschlafzeit', verdict(sdBed))
       + card('± ' + sdWake + ' min', 'Aufstehzeit', verdict(sdWake)) + '</div>'
+      + '<p class="stats-note" style="margin:8px 2px 0;">Einzelne Ausreißer zählen kaum mit (Median statt Durchschnitt).</p>'
       + '<div style="margin-top:10px;">' + rhythmSvg(last14) + '</div>';
   }
 

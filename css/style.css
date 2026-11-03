@@ -1389,11 +1389,12 @@ dialog.note-full form { display: flex; flex-direction: column; height: 100%; }
 .shop-cat > .shop-grid { padding-top: 10px; }
 .chip.emo { padding: 0 10px; font-size: 18px; }
 
-.shop-sub { margin: 0 0 12px; }
+.shop-sub { margin: 16px 0 0; }
 .sh-rows { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
 .sh-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: baseline; font-size: 13.5px; }
 .sh-rv { font-weight: 600; font-variant-numeric: tabular-nums; }
 .sh-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--ring); overflow: hidden; }
 .sh-bar span { display: block; height: 100%; background: var(--sage); border-radius: 3px; }
-.shop-sub { padding: 2px; }
-.shop-sub button { padding-top: 7px; padding-bottom: 7px; font-size: 13px; }
+.note-search { margin-top: 16px; }
+.shop-period { margin: 16px 0 0; }
+.shop-stats-grid { margin-top: 16px !important; }
